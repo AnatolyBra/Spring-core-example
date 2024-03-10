@@ -1,15 +1,11 @@
 package org.example;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PersonInfo {
-    @Value("${app.person.fullName}")
     private String fullName;
-    @Value("${app.person.phoneNumber}")
     private String phoneNumber;
-    @Value("${app.person.email}")
     private String email;
 
     public void setFullName(String fullName) {
@@ -27,5 +23,4 @@ public class PersonInfo {
     public String recordPerson() {
         return fullName + ";" + phoneNumber + ";" + email + ";";
     }
-
 }

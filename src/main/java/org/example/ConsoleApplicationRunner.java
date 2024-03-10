@@ -2,10 +2,7 @@ package org.example;
 
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -13,7 +10,9 @@ import java.util.Scanner;
 import static org.example.Validate.*;
 
 @Component
-public class ControllerContacts {
+public class ConsoleApplicationRunner implements CommandLineRunner {
+    private final ContactsManager contactsManager;
+
     static String textMenu = """
             Введите цифру:
             1 Показать список контактов
@@ -21,8 +20,13 @@ public class ControllerContacts {
             3 Удалить контакт по email
             0 Завершить программу""";
 
-    public ControllerContacts() throws IOException {
+    public ConsoleApplicationRunner(ContactsManager contactsManager) throws IOException {
+        this.contactsManager = contactsManager;
+        run();
+    }
 
+    @Override
+    public void run() throws IOException {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println(textMenu);
@@ -31,7 +35,7 @@ public class ControllerContacts {
             number = scanner.nextLine();
             switch (number) {
                 case "1":
-                    readToFile().forEach(System.out::println);
+                    readAllContacts().forEach(System.out::println);
                     System.out.println(textMenu);
                     break;
                 case "2":
@@ -41,7 +45,7 @@ public class ControllerContacts {
                 case "3":
                     System.out.print("Введите email для удаления контакта: ");
                     String email = scanner.nextLine();
-                    removeContacts(email);
+                    removeContact(email);
                     System.out.println(textMenu);
                     break;
                 default:
@@ -52,52 +56,8 @@ public class ControllerContacts {
         }
     }
 
-    private static List<String> readToFile() {
-        List<String> list = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader("contacts.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                list.add(line);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return list;
-    }
-
-    private static void writeToFile(String input) throws IOException {
-        FileWriter writer = new FileWriter("contacts.txt", true);
-        writer.write("\n" + input);
-        writer.flush();
-        writer.close();
-    }
-
-    private static void removeContacts(String email) throws IOException {
-        List<String> listOld = readToFile();
-
-        List<String> list = listOld.stream().filter(contacts -> {
-            var contactsArray = contacts.split(";");
-            return !contactsArray[2].equals(email);
-        }).toList();
-
-        if (list.size() != listOld.size()) {
-            FileWriter writer = new FileWriter("contacts.txt");
-            list.forEach(x -> {
-                        try {
-                            writer.write(x);
-                            writer.flush();
-                            writer.close();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-            );
-        } else {
-            System.out.println("Номера с таким email не существует");
-        }
-    }
-
-    private static boolean addContact() {
+    @Override
+    public boolean addContact() {
         Scanner scanner = new Scanner(System.in);
         PersonInfo personInfo = new PersonInfo();
 
@@ -128,7 +88,7 @@ public class ControllerContacts {
 
         personInfo.setEmail(email);
         try {
-            writeToFile(personInfo.recordPerson());
+            writeContactToFile(personInfo.recordPerson());
             System.out.println("Строка успешно записана в файл.");
         } catch (IOException e) {
             System.out.println("Ошибка при записи в файл.");
@@ -136,4 +96,64 @@ public class ControllerContacts {
         return true;
     }
 
+    @Override
+    public void removeContact(String email) throws IOException {
+        List<String> listOld = readAllContacts();
+
+        List<String> list = listOld.stream().filter(contacts -> {
+            var contactsArray = contacts.split(";");
+            return !contactsArray[2].equals(email);
+        }).toList();
+
+        if (list.size() != listOld.size()) {
+            FileWriter writer = new FileWriter(contactsManager.getContactsFilePath());
+            list.forEach(x -> {
+                        try {
+                            writer.write(x);
+                            writer.flush();
+                            writer.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+            );
+        } else {
+            System.out.println("Номера с таким email не существует");
+        }
+    }
+
+    @Override
+    public void writeContactToFile(String input) throws IOException {
+        File file = new File(contactsManager.getContactsFilePath());
+        if (file.exists()) {
+            FileWriter writer = new FileWriter(contactsManager.getContactsFilePath(), true);
+            writer.write("\n" + input);
+            writer.flush();
+            writer.close();
+        } else {
+            FileWriter writer = new FileWriter(contactsManager.getContactsFilePath(), true);
+            writer.write(input);
+            writer.flush();
+            writer.close();
+        }
+    }
+
+    @Override
+    public List<String> readAllContacts() {
+        File file = new File(contactsManager.getContactsFilePath());
+        if (file.exists()) {
+            List<String> list = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(new FileReader(contactsManager.getContactsFilePath()))) {
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    list.add(line);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return list;
+        }
+        return List.of("Записная книжка пустая");
+    }
 }

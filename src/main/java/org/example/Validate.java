@@ -8,7 +8,7 @@ public class Validate {
             "\\b[А-Яа-яЁё]{3,13}\\s[А-Яа-яЁё]{3,13}+||" +
             "\\b[А-Яа-яЁё]{3,13}\\s[А-Яа-яЁё]{3,13}+\\s[А-Яа-яЁё]{3,13}+\\b";
 
-    private static final String PHONE_PATTERN = "\\+\\d{9}$";
+    private static final String PHONE_PATTERN = "\\+\\d{11}$";
     private static final String EMAIL_PATTERN = "^[^@\\s]+@([^@\\s]+\\.)+[\\w]{2,}$";
 
     private static boolean validate(String text, String reg) {
